@@ -37,7 +37,7 @@ try {
 
     foreach ($grupo in $duplicados) {
         # Imprime el nombre del archivo
-        Write-Output $grupo.Group.Name
+        Write-Output $grupo.Group[0].Name
         
         foreach ($archivo in $grupo.Group) {
             Write-Output $archivo.DirectoryName
