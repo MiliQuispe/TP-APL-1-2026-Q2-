@@ -1,1 +1,17 @@
+búsqueda ok
+.\Ejercicio5.ps1 -people 1,2 -film 1,2
 
+parámetros invertidos
+.\Ejercicio5.ps1 -film 3 -people 4
+
+ID inexistente
+.\Ejercicio5.ps1 -people 9999
+
+tipo de dato incorrecto
+.\Ejercicio5.ps1 -people "Yoda"
+
+ejecución sin parámetros (validación lógica)
+.\Ejercicio5.ps1
+
+usar el sistema de Ayuda
+Get-Help .\Ejercicio5.ps1
