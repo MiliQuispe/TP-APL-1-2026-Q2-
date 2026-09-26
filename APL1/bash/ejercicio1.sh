@@ -1,13 +1,8 @@
 
 #!/usr/bin/env bash
 
-###############################################################################
-# Cátedra de Sistemas Operativos - UNLaM
-# APL 1 - Ejercicio 1: Validación de Lotería
-# 
 # Integrantes:
-# - Quispe, Milagros 45064110
-###############################################################################
+# Quispe, Milagros 45064110
 
 # definición y limpieza de temporales con trap -----
 TEMP_DIR="/tmp/apl1_ej1_$$" #garantiza que el nombre de la carpeta en /tmp sea único
