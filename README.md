@@ -17,7 +17,6 @@ Departamento de Ingeniería e Investigaciones Tecnológicas
 |---|---|
 | **Grupo N°** | 4 |
 | **Día de cursada** | Jueves |
-| **Tipo de entrega** | Entrega |
 
 ### Integrantes (ordenados por apellido)
 
