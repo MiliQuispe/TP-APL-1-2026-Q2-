@@ -1,3 +1,5 @@
+# Altamiranda Isaías
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, HelpMessage = "Ingrese la ruta del directorio a analizar.")]
