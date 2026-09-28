@@ -3,6 +3,7 @@
 
 # Integrantes:
 # Quispe, Milagros 45064110
+# Altamiranda Isaías
 
 # definición y limpieza de temporales con trap -----
 TEMP_DIR="/tmp/apl1_ej1_$$" #garantiza que el nombre de la carpeta en /tmp sea único
