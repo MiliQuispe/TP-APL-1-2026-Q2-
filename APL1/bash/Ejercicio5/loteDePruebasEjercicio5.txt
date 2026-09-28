@@ -1,0 +1,30 @@
+Simple
+./Ejercicio5.sh -p 1
+
+personajes y pelis
+./Ejercicio5.sh -p "1,2,3" -f "1,2"
+
+parametros largos
+./Ejercicio5.sh --people 4 --film 3
+
+en otro orden
+./Ejercicio5.sh -f 4 -p 5
+
+cache
+./Ejercicio5.sh -p 1
+
+ID que no existe
+./Ejercicio5.sh -p 99999
+
+Errores entre las que no deberian dar Errores
+./Ejercicio5.sh -f "1,8888,2"
+
+parametros obligatorios
+./Ejercicio5.sh
+
+parametros invalido (-x)
+./Ejercicio5.sh -x 1
+
+ayuda
+./Ejercicio5.sh --help
+./Ejercicio5.sh -h
