@@ -1,5 +1,6 @@
 # Integrantes del grupo:
 # Quispe, Milagros 45064110
+# Altamiranda Isaías
 
 #ayuda
 <#
