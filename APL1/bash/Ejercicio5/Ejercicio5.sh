@@ -1,5 +1,10 @@
 #!/bin/bash
-# Integrantes: Altamiranda Isaías
+# Integrantes: 
+# Altamiranda Isaías
+# Quispe, Milagros 45064110
+# Puca, Micaela 39913189
+# Penela, Santiago 44254763
+# Sabes, Franco
 
 # ayuda del script
 show_help() {

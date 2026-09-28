@@ -1,9 +1,12 @@
 
 #!/usr/bin/env bash
 
-# Integrantes:
-# Quispe, Milagros 45064110
+# Integrantes del grupo:
 # Altamiranda Isaías
+# Quispe, Milagros 45064110
+# Puca, Micaela 39913189
+# Penela, Santiago 44254763
+# Sabes, Franco 38168884
 
 # definición y limpieza de temporales con trap -----
 TEMP_DIR="/tmp/apl1_ej1_$$" #garantiza que el nombre de la carpeta en /tmp sea único

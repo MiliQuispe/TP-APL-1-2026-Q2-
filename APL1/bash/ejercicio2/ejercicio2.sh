@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # Integrantes del grupo:
+# Altamiranda Isaías
 # Quispe, Milagros 45064110
 # Puca, Micaela 39913189
+# Penela, Santiago 44254763
+# Sabes, Franco 38168884
 
 # función de ayuda (se la llama con -h / --help) -----
 mostrar_ayuda() {
