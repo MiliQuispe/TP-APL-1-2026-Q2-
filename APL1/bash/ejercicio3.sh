@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Altamiranda Isaías
+
 # Función para mostrar la ayuda del script
 mostrar_ayuda() {
     cat << EOF
