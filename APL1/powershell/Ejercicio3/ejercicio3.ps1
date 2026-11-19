@@ -5,13 +5,6 @@
 # Penela, Santiago 44254763
 # Sabes, Franco 38168884
 
-[CmdletBinding()]
-param(
-    [Parameter(Mandatory = $true, HelpMessage = "Ingrese la ruta del directorio a analizar.")]
-    [ValidateNotNullOrEmpty()]
-    [string]$directorio
-)
-
 <#
 .SYNOPSIS
     Identifica archivos duplicados (mismo nombre y tamaño) en un directorio y sus subdirectorios.
@@ -25,6 +18,13 @@ param(
 .EXAMPLE
     ./ejercicio3.ps1 -directorio "/home/santiago/apl"
 #>
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true, HelpMessage = "Ingrese la ruta del directorio a analizar.")]
+    [ValidateNotNullOrEmpty()]
+    [string]$directorio
+)
 
 try {
     if (-not (Test-Path -Path $directorio -PathType Container)) {
