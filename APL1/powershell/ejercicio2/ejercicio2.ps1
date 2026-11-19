@@ -4,6 +4,7 @@
 # Puca, Micaela 39913189
 # Penela, Santiago 44254763
 # Sabes, Franco 38168884
+
 <#
 .SYNOPSIS
     Realiza el producto escalar o la trasposición de una matriz leída desde un archivo de texto.
