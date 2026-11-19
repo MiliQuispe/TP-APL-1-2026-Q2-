@@ -67,7 +67,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$script:StateRoot = Join-Path $env:TEMP 'ejercicio4_daemons'
+# GetTempPath funciona tanto en Windows como en Linux ($env:TEMP
+# no existe en Linux)
+$script:TempRoot = [System.IO.Path]::GetTempPath()
+$script:StateRoot = Join-Path $script:TempRoot 'ejercicio4_daemons'
 
 # ------------------------------------------------------------
 # Write-FriendlyError: muestra un mensaje de error comprensible
@@ -84,7 +87,9 @@ function Global:Write-FriendlyError {
 # ------------------------------------------------------------
 function Global:Get-DirectoryHash {
     param([string]$Path)
-    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Path.ToLowerInvariant())
+    # Se quita la barra final para que "dir" y "dir/" sean el mismo directorio
+    $normalized = $Path.TrimEnd('\', '/').ToLowerInvariant()
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
     $hashBytes = [System.Security.Cryptography.MD5]::Create().ComputeHash($bytes)
     -join ($hashBytes | ForEach-Object { $_.ToString('x2') })
 }
@@ -100,6 +105,9 @@ function Global:Get-StateFiles {
     [PSCustomObject]@{
         PidFile  = Join-Path $script:StateRoot "$hash.pid"
         StopFile = Join-Path $script:StateRoot "$hash.stop"
+        ErrFile  = Join-Path $script:StateRoot "$hash.err"
+        # Lo crea el demonio cuando ya está monitoreando
+        ReadyFile = Join-Path $script:StateRoot "$hash.ready"
     }
 }
 
@@ -157,7 +165,7 @@ function Global:New-BackupArchive {
     )
 
     $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-    $tempDir = Join-Path $env:TEMP "ejercicio4_backup_$timestamp"
+    $tempDir = Join-Path $script:TempRoot "ejercicio4_backup_$timestamp"
 
     try {
         New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
@@ -226,21 +234,57 @@ function Global:Start-DaemonProcess {
         Write-FriendlyError "ya existe un demonio en ejecución para el directorio '$absDir'."
         return
     }
-    Remove-Item -LiteralPath $state.PidFile, $state.StopFile -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $state.PidFile, $state.StopFile, $state.ReadyFile -ErrorAction SilentlyContinue
 
     $scriptPath = $PSCommandPath
-    $argumentList = @(
-        '-NoLogo', '-NoProfile', '-WindowStyle', 'Hidden',
-        '-File', "`"$scriptPath`"",
-        '-directorio', "`"$absDir`"",
-        '-salida', "`"$absOut`"",
+    # Se relanza con el mismo ejecutable que está corriendo este
+    # script (powershell.exe en Windows, pwsh en Linux)
+    $exePath = (Get-Process -Id $PID).Path
+    $esWindows = [System.Environment]::OSVersion.Platform -eq 'Win32NT'
+
+    $argumentList = @('-NoLogo', '-NoProfile', '-NonInteractive')
+    if ($esWindows) { $argumentList += @('-WindowStyle', 'Hidden') }
+    # Una "\" final escaparía la comilla de cierre ("C:\dir\" llega
+    # roto al proceso hijo), por eso se duplica
+    $quote = { param($s) '"' + ($s -replace '\\$', '\\') + '"' }
+    $argumentList += @(
+        '-File', (& $quote $scriptPath),
+        '-directorio', (& $quote $absDir),
+        '-salida', (& $quote $absOut),
         '-Interno'
     )
 
-    $process = Start-Process -FilePath 'powershell.exe' -ArgumentList $argumentList `
-        -WindowStyle Hidden -PassThru
+    $startParams = @{
+        FilePath     = $exePath
+        ArgumentList = $argumentList
+        PassThru     = $true
+    }
+    if ($esWindows) {
+        # -WindowStyle solo existe en Windows
+        $startParams.WindowStyle = 'Hidden'
+    } else {
+        # En Linux se desvincula la salida del demonio de la terminal
+        $startParams.RedirectStandardOutput = '/dev/null'
+        $startParams.RedirectStandardError  = $state.ErrFile
+    }
+
+    $process = Start-Process @startParams
 
     Set-Content -LiteralPath $state.PidFile -Value $process.Id
+
+    # Se espera a que el demonio confirme que ya está monitoreando,
+    # para no perder archivos creados apenas termina este comando
+    $limite = (Get-Date).AddSeconds(30)
+    while (-not (Test-Path -LiteralPath $state.ReadyFile)) {
+        if ($process.HasExited -or (Get-Date) -gt $limite) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $state.PidFile, $state.ReadyFile -ErrorAction SilentlyContinue
+            Write-FriendlyError "el demonio no pudo iniciarse sobre '$absDir'."
+            return
+        }
+        Start-Sleep -Milliseconds 200
+    }
+
     Write-Host "Demonio iniciado correctamente sobre '$absDir' (PID $($process.Id))."
 }
 
@@ -262,7 +306,7 @@ function Global:Stop-DaemonProcess {
 
     if (-not (Test-DaemonRunning -PidFile $state.PidFile)) {
         Write-FriendlyError "no hay ningún demonio en ejecución para el directorio '$absDir'."
-        Remove-Item -LiteralPath $state.PidFile, $state.StopFile -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $state.PidFile, $state.StopFile, $state.ErrFile -ErrorAction SilentlyContinue
         return
     }
 
@@ -276,8 +320,53 @@ function Global:Stop-DaemonProcess {
         Stop-Process -Id $storedId -Force -ErrorAction SilentlyContinue
     }
 
-    Remove-Item -LiteralPath $state.PidFile, $state.StopFile -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $state.PidFile, $state.StopFile, $state.ErrFile, $state.ReadyFile -ErrorAction SilentlyContinue
     Write-Host "Demonio detenido correctamente para el directorio '$absDir'."
+}
+
+# ------------------------------------------------------------
+# Invoke-NewFile: procesa un archivo nuevo dentro del árbol
+# monitoreado; si tiene duplicados (y no fue respaldado antes)
+# genera el backup
+# ------------------------------------------------------------
+function Global:Invoke-NewFile {
+    param(
+        [string]$FullPath,
+        [PSCustomObject]$MessageData
+    )
+
+    $rootDir  = $MessageData.RootDirectory
+    $outDir   = $MessageData.OutputDirectory
+    $backedUp = $MessageData.AlreadyBackedUp
+
+    [System.Threading.Monitor]::Enter($backedUp)
+    try {
+        if ($backedUp.ContainsKey($FullPath)) { return }
+    } finally {
+        [System.Threading.Monitor]::Exit($backedUp)
+    }
+
+    Start-Sleep -Milliseconds 200  # da tiempo a que el archivo termine de escribirse
+    $duplicates = @(Find-DuplicateFiles -NewFilePath $FullPath -RootDirectory $rootDir)
+    if ($duplicates.Count -eq 0) { return }
+
+    $newItem = $null
+    [System.Threading.Monitor]::Enter($backedUp)
+    try {
+        # Volvemos a chequear: puede que el otro archivo del
+        # par ya haya generado el backup mientras esperábamos.
+        if ($backedUp.ContainsKey($FullPath)) { return }
+        $newItem = Get-Item -LiteralPath $FullPath -ErrorAction SilentlyContinue
+        if (-not $newItem) { return }
+
+        $backedUp[$FullPath] = $true
+        foreach ($d in $duplicates) { $backedUp[$d.FullName] = $true }
+    } finally {
+        [System.Threading.Monitor]::Exit($backedUp)
+    }
+
+    New-BackupArchive -NewFile $newItem -RootDirectory $rootDir `
+        -OutputDirectory $outDir -Duplicates $duplicates
 }
 
 # ------------------------------------------------------------
@@ -301,7 +390,8 @@ function Global:Start-MonitorLoop {
     $watcher.Path = $absDir
     $watcher.IncludeSubdirectories = $true
     $watcher.Filter = '*.*'
-    $watcher.NotifyFilter = [System.IO.NotifyFilters]::FileName
+    # DirectoryName: para enterarse también de carpetas nuevas
+    $watcher.NotifyFilter = [System.IO.NotifyFilters]'FileName, DirectoryName'
 
     $messageData = [PSCustomObject]@{
         RootDirectory   = $absDir
@@ -317,41 +407,20 @@ function Global:Start-MonitorLoop {
 
     $action = {
         param($EventSource, $EventArgs)
-        if (-not (Test-Path -LiteralPath $EventArgs.FullPath -PathType Leaf)) { return }
+        $path = $EventArgs.FullPath
+        $data = $Event.MessageData
 
-        $rootDir  = $Event.MessageData.RootDirectory
-        $outDir   = $Event.MessageData.OutputDirectory
-        $backedUp = $Event.MessageData.AlreadyBackedUp
-        $fullPath = $EventArgs.FullPath
-
-        [System.Threading.Monitor]::Enter($backedUp)
-        try {
-            if ($backedUp.ContainsKey($fullPath)) { return }
-        } finally {
-            [System.Threading.Monitor]::Exit($backedUp)
+        if (Test-Path -LiteralPath $path -PathType Leaf) {
+            Invoke-NewFile -FullPath $path -MessageData $data
         }
-
-        Start-Sleep -Milliseconds 200  # da tiempo a que el archivo termine de escribirse
-        $duplicates = @(Find-DuplicateFiles -NewFilePath $fullPath -RootDirectory $rootDir)
-        if ($duplicates.Count -eq 0) { return }
-
-        $newItem = $null
-        [System.Threading.Monitor]::Enter($backedUp)
-        try {
-            # Volvemos a chequear: puede que el otro archivo del
-            # par ya haya generado el backup mientras esperábamos.
-            if ($backedUp.ContainsKey($fullPath)) { return }
-            $newItem = Get-Item -LiteralPath $fullPath -ErrorAction SilentlyContinue
-            if (-not $newItem) { return }
-
-            $backedUp[$fullPath] = $true
-            foreach ($d in $duplicates) { $backedUp[$d.FullName] = $true }
-        } finally {
-            [System.Threading.Monitor]::Exit($backedUp)
+        elseif (Test-Path -LiteralPath $path -PathType Container) {
+            # Carpeta nueva (o movida al árbol): los archivos creados
+            # dentro de ella antes de que el watcher empiece a vigilarla
+            # no generan evento propio, así que se revisan acá
+            Start-Sleep -Milliseconds 200
+            Get-ChildItem -LiteralPath $path -Recurse -File -ErrorAction SilentlyContinue |
+                ForEach-Object { Invoke-NewFile -FullPath $_.FullName -MessageData $data }
         }
-
-        New-BackupArchive -NewFile $newItem -RootDirectory $rootDir `
-            -OutputDirectory $outDir -Duplicates $duplicates
     }
 
     # Se cubren tanto archivos nuevos (Created) como archivos
@@ -361,6 +430,7 @@ function Global:Start-MonitorLoop {
         Register-ObjectEvent -InputObject $watcher -EventName Renamed -Action $action -MessageData $messageData
     )
     $watcher.EnableRaisingEvents = $true
+    New-Item -ItemType File -Path $state.ReadyFile -Force | Out-Null
 
     try {
         while (-not (Test-Path $state.StopFile)) {
@@ -372,7 +442,7 @@ function Global:Start-MonitorLoop {
             Unregister-Event -SourceIdentifier $subscription.Name -ErrorAction SilentlyContinue
         }
         $watcher.Dispose()
-        Remove-Item -LiteralPath $state.PidFile, $state.StopFile -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $state.PidFile, $state.StopFile, $state.ReadyFile -ErrorAction SilentlyContinue
     }
 }
 
