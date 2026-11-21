@@ -405,8 +405,9 @@ function Global:Start-MonitorLoop {
         AlreadyBackedUp = [System.Collections.Hashtable]::Synchronized(@{})
     }
 
+    # $Event y $EventArgs son variables automaticas que PowerShell
+    # define dentro del -Action de Register-ObjectEvent
     $action = {
-        param($EventSource, $EventArgs)
         $path = $EventArgs.FullPath
         $data = $Event.MessageData
 
