@@ -1,5 +1,5 @@
 # Integrantes del grupo:
-# Altamiranda Isaías
+# Altamiranda Isaias
 # Quispe, Milagros 45064110
 # Puca, Micaela 39913189
 # Penela, Santiago 44254763
@@ -7,21 +7,21 @@
 
 <#
 .SYNOPSIS
-    Realiza el producto escalar o la trasposición de una matriz leída desde un archivo de texto.
+    Realiza el producto escalar o la trasposicion de una matriz leida desde un archivo de texto.
 .DESCRIPTION
-    Script del Ejercicio 2. Lee una matriz desde un archivo de texto plano (valores numéricos
-    separados por un caracter indicado), valida que la matriz sea válida (mismas columnas por
-    fila y valores numéricos) y genera un archivo de salida llamado "salida.<nombreArchivoEntrada>"
+    Script del Ejercicio 2. Lee una matriz desde un archivo de texto plano (valores numericos
+    separados por un caracter indicado), valida que la matriz sea valida (mismas columnas por
+    fila y valores numericos) y genera un archivo de salida llamado "salida.<nombreArchivoEntrada>"
     en el mismo directorio donde se encuentra el archivo de entrada.
 .PARAMETER matriz
     Ruta (relativa o absoluta) del archivo de texto que contiene la matriz.
 .PARAMETER producto
     Valor entero para realizar el producto escalar sobre la matriz. No combinable con -trasponer.
 .PARAMETER trasponer
-    Indica que se debe realizar la trasposición de la matriz. No combinable con -producto.
+    Indica que se debe realizar la trasposicion de la matriz. No combinable con -producto.
 .PARAMETER separador
     Caracter utilizado como separador de columnas dentro del archivo de la matriz.
-    No puede ser un número ni el símbolo "-".
+    No puede ser un numero ni el simbolo "-".
 .EXAMPLE
     Get-Help ./ejercicio2.ps1
 .EXAMPLE
@@ -39,13 +39,13 @@ param (
     [Parameter(ParameterSetName = 'Producto', HelpMessage = "Valor entero para el producto escalar.")]
     [int]$producto,
 
-    [Parameter(ParameterSetName = 'Trasponer', HelpMessage = "Realizar la trasposición de la matriz.")]
+    [Parameter(ParameterSetName = 'Trasponer', HelpMessage = "Realizar la trasposicion de la matriz.")]
     [switch]$trasponer,
 
     [Parameter(HelpMessage = "Caracter separador de columnas.")]
     [ValidateScript({
         if ($_.Length -ne 1) {
-            throw "El separador debe ser un único caracter."
+            throw "El separador debe ser un unico caracter."
         }
         if ($_ -match '[0-9]') {
             throw "El separador no puede ser un numero."
@@ -58,7 +58,7 @@ param (
     [string]$separador
 )
 
-## Convierte el contenido del archivo de la matriz en una matriz numérica, validando su formato
+## Convierte el contenido del archivo de la matriz en una matriz numerica, validando su formato
 function ConvertTo-Matriz {
     param(
         [string]$Ruta,
@@ -67,13 +67,13 @@ function ConvertTo-Matriz {
 
     $contenido = @(Get-Content -Path $Ruta -ErrorAction Stop)
 
-    ### se descartan líneas en blanco al final del archivo (por ejemplo, salto de línea final)
+    ### se descartan lineas en blanco al final del archivo (por ejemplo, salto de linea final)
     while ($contenido.Count -gt 0 -and [string]::IsNullOrWhiteSpace($contenido[-1])) {
         $contenido = $contenido[0..($contenido.Count - 2)]
     }
 
     if ($contenido.Count -eq 0) {
-        throw "El archivo de la matriz está vacío."
+        throw "El archivo de la matriz esta vacio."
     }
 
     $separadorEscapado = [regex]::Escape($Separador)
@@ -85,7 +85,7 @@ function ConvertTo-Matriz {
         $linea = $contenido[$i]
 
         if ([string]::IsNullOrWhiteSpace($linea)) {
-            throw "La matriz es inválida: la fila $numeroFila está vacía."
+            throw "La matriz es invalida: la fila $numeroFila esta vacia."
         }
 
         $tokens = [regex]::Split($linea.Trim(), $separadorEscapado)
@@ -93,7 +93,7 @@ function ConvertTo-Matriz {
         if ($columnasEsperadas -eq -1) {
             $columnasEsperadas = $tokens.Count
         } elseif ($tokens.Count -ne $columnasEsperadas) {
-            throw "La matriz es inválida: la fila $numeroFila tiene $($tokens.Count) columna(s) y se esperaban $columnasEsperadas."
+            throw "La matriz es invalida: la fila $numeroFila tiene $($tokens.Count) columna(s) y se esperaban $columnasEsperadas."
         }
 
         $filaNumerica = @()
@@ -101,7 +101,7 @@ function ConvertTo-Matriz {
             $valor = 0.0
             $textoLimpio = $token.Trim()
             if (-not [double]::TryParse($textoLimpio, [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$valor)) {
-                throw "La matriz es inválida: el valor '$token' en la fila $numeroFila no es un número válido."
+                throw "La matriz es invalida: el valor '$token' en la fila $numeroFila no es un numero valido."
             }
             $filaNumerica += , $valor
         }
@@ -161,7 +161,7 @@ function ConvertTo-TextoMatriz {
     }
 }
 
-## Validación manual de parámetros obligatorios (sin solicitar ingreso interactivo)
+## Validacion manual de parametros obligatorios (sin solicitar ingreso interactivo)
 $parametrosFaltantes = @()
 
 if (-not $PSBoundParameters.ContainsKey('matriz') -or [string]::IsNullOrWhiteSpace($matriz)) {
@@ -179,9 +179,9 @@ if ($parametrosFaltantes.Count -gt 0) {
     exit 1
 }
 
-#por falla inesperada en tiempo de ejecución
+#por falla inesperada en tiempo de ejecucion
 try {
-    ## Validación del archivo de la matriz
+    ## Validacion del archivo de la matriz
     if (-not (Test-Path -Path $matriz -PathType Leaf)) {
         Write-Error "El archivo de la matriz especificado '$matriz' no existe o no es accesible."
         exit 1
@@ -192,23 +192,23 @@ try {
     $nombreArchivoEntrada = Split-Path -Path $rutaMatrizAbsoluta -Leaf
     $rutaSalida = Join-Path -Path $directorioEntrada -ChildPath "salida.$nombreArchivoEntrada"
 
-    ## Lectura y validación de la matriz de entrada
+    ## Lectura y validacion de la matriz de entrada
     $matrizEntrada = ConvertTo-Matriz -Ruta $rutaMatrizAbsoluta -Separador $separador
 
-    ## Cálculo según la operación solicitada
+    ## Calculo segun la operacion solicitada
     if ($PSCmdlet.ParameterSetName -eq 'Trasponer') {
         $matrizResultado = Get-MatrizTraspuesta -Matriz $matrizEntrada
     } else {
         $matrizResultado = Get-ProductoEscalar -Matriz $matrizEntrada -Factor $producto
     }
 
-    ## Generación del archivo de salida
+    ## Generacion del archivo de salida
     $textoSalida = ConvertTo-TextoMatriz -Matriz $matrizResultado -Separador $separador
     $textoSalida | Out-File -FilePath $rutaSalida -Encoding utf8
 
     Write-Host "Archivo de salida generado exitosamente en: $rutaSalida"
 
 } catch {
-    Write-Error "Ocurrió un inconveniente al procesar la matriz: $($_.Exception.Message)"
+    Write-Error "Ocurrio un inconveniente al procesar la matriz: $($_.Exception.Message)"
     exit 1
 }

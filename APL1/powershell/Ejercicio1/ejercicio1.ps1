@@ -1,14 +1,13 @@
 # Integrantes del grupo:
-# Altamiranda Isaías
+# Altamiranda Isaias
 # Quispe, Milagros 45064110
 # Puca, Micaela 39913189
 # Penela, Santiago 44254763
 # Sabes, Franco 38168884
 
-#ayuda
 <#
 .SYNOPSIS
-    Procesa las jugadas semanales de agencias de lotería y clasifica por aciertos.
+    Procesa las jugadas semanales de agencias de loteria y clasifica por aciertos.
 .DESCRIPTION
     Script del Ejercicio 1 
 .PARAMETER directorio
@@ -18,7 +17,7 @@
 .PARAMETER pantalla
     Muestra la salida en formato JSON por pantalla (no combinable con -archivo).
 .PARAMETER ganadores
-    Ruta alternativa al archivo CSV con los 5 números ganadores.
+    Ruta alternativa al archivo CSV con los 5 numeros ganadores.
 .EXAMPLE
     Get-Help ./ejercicio1.ps1
 .EXAMPLE
@@ -27,7 +26,7 @@
     ./ejercicio1.ps1 -directorio ./pruebas -archivo ./salida.json
 #>
 
-#Validación nativa en param(...)
+#Validacion nativa en param(...)
 [CmdletBinding(DefaultParameterSetName = 'PorPantalla')]
 
 param (
@@ -49,7 +48,7 @@ param (
 
 #por falla inesperada en tiempo de ejecucion
 try {
-    ## Validación del directorio de agencias
+    ## Validacion del directorio de agencias
     if (-not (Test-Path -Path $directorio -PathType Container)) {
         Write-Error "El directorio especificado '$directorio' no existe o no es accesible."
         exit 1
@@ -62,22 +61,22 @@ try {
         $rutaGanadores = Join-Path -Path $rutaDirectorio -ChildPath "ganadores.csv"
     } else {
         if (-not (Test-Path -Path $ganadores -PathType Leaf)) {
-            Write-Error "No se encontró el archivo de ganadores indicado en: $ganadores"
+            Write-Error "No se encontro el archivo de ganadores indicado en: $ganadores"
             exit 1
         }
         $rutaGanadores = (Resolve-Path -Path $ganadores).Path
     }
 
     if (-not (Test-Path -Path $rutaGanadores -PathType Leaf)) {
-        Write-Error "No se encontró el archivo 'ganadores.csv' dentro de $rutaDirectorio"
+        Write-Error "No se encontro el archivo 'ganadores.csv' dentro de $rutaDirectorio"
         exit 1
     }
 
-    ### Leer los 5 números ganadores
+    ### Leer los 5 numeros ganadores
     $lineaGanadores = Get-Content -Path $rutaGanadores -TotalCount 1
     $numerosGanadores = $lineaGanadores.Trim().Split(',') | ForEach-Object { [int]$_.Trim() }
 
-    ### Estructura ordenada para mantener la jerarquía 
+    ### Estructura ordenada para mantener la jerarquia 
     $salida = [ordered]@{
         "5_aciertos" = [System.Collections.Generic.List[PSObject]]::new()
         "4_aciertos" = [System.Collections.Generic.List[PSObject]]::new()
@@ -115,7 +114,7 @@ try {
         }
     }
 
-    ## Generación del JSON nativo
+    ## Generacion del JSON nativo
     $jsonResultado = $salida | ConvertTo-Json -Depth 4
 
     ## Salida por pantalla o archivo
@@ -131,6 +130,6 @@ try {
     }
 
 } catch {
-    Write-Error "Ocurrió un inconveniente al procesar las jugadas: $($_.Exception.Message)"
+    Write-Error "Ocurrio un inconveniente al procesar las jugadas: $($_.Exception.Message)"
     exit 1
 }

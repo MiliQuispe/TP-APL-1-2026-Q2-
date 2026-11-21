@@ -1,5 +1,5 @@
-﻿# Integrantes del grupo:
-# Altamiranda Isaías
+# Integrantes del grupo:
+# Altamiranda Isaias
 # Quispe, Milagros 45064110
 # Puca, Micaela 39913189
 # Penela, Santiago 44254763
@@ -13,16 +13,16 @@ comprimidos cuando detecta archivos duplicados.
 .DESCRIPTION
 Este script implementa un proceso demonio que monitorea, en
 forma recursiva, un directorio y sus subdirectorios utilizando
-FileSystemWatcher. Cuando se crea (o se mueve hacia el árbol)
+FileSystemWatcher. Cuando se crea (o se mueve hacia el arbol)
 un archivo nuevo que resulta duplicado de otro ya existente
-(mismo nombre y mismo tamaño, igual criterio que el Ejercicio
+(mismo nombre y mismo tamano, igual criterio que el Ejercicio
 3), genera un log y comprime los archivos involucrados en un
 archivo zip dentro del directorio de salida, con nombre en
 formato yyyyMMdd-HHmmss.
 
-El mismo script permite además detener un demonio ya iniciado
+El mismo script permite ademas detener un demonio ya iniciado
 sobre un directorio, y evita que se inicien dos demonios sobre
-el mismo directorio en forma simultánea.
+el mismo directorio en forma simultanea.
 
 .PARAMETER directorio
 Ruta del directorio a monitorear (obligatorio en ambos modos).
@@ -43,7 +43,7 @@ Inicia el demonio sobre "../monitor", generando backups en
 
 .EXAMPLE
 ./ejercicio4.ps1 -directorio ../monitor -kill
-Detiene el demonio que esté corriendo sobre "../monitor".
+Detiene el demonio que este corriendo sobre "../monitor".
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Start')]
@@ -61,7 +61,7 @@ param(
     [switch]$kill,
 
     # Uso interno: indica que ESTA instancia del proceso ES el
-    # demonio. No forma parte de la interfaz pública del script.
+    # demonio. No forma parte de la interfaz publica del script.
     [Parameter(Mandatory = $false, ParameterSetName = 'Start')]
     [switch]$Interno
 )
@@ -74,7 +74,7 @@ $script:StateRoot = Join-Path $script:TempRoot 'ejercicio4_daemons'
 
 # ------------------------------------------------------------
 # Write-FriendlyError: muestra un mensaje de error comprensible
-# para un usuario sin conocimientos técnicos
+# para un usuario sin conocimientos tecnicos
 # ------------------------------------------------------------
 function Global:Write-FriendlyError {
     param([string]$Message)
@@ -82,7 +82,7 @@ function Global:Write-FriendlyError {
 }
 
 # ------------------------------------------------------------
-# Get-DirectoryHash: obtiene un identificador único y estable
+# Get-DirectoryHash: obtiene un identificador unico y estable
 # (MD5) para una ruta de directorio absoluta
 # ------------------------------------------------------------
 function Global:Get-DirectoryHash {
@@ -96,7 +96,7 @@ function Global:Get-DirectoryHash {
 
 # ------------------------------------------------------------
 # Get-StateFiles: dado un directorio absoluto, devuelve las
-# rutas del archivo de PID y del archivo "señal de detención"
+# rutas del archivo de PID y del archivo "senal de detencion"
 # (stop flag) usados para controlar su demonio
 # ------------------------------------------------------------
 function Global:Get-StateFiles {
@@ -106,7 +106,7 @@ function Global:Get-StateFiles {
         PidFile  = Join-Path $script:StateRoot "$hash.pid"
         StopFile = Join-Path $script:StateRoot "$hash.stop"
         ErrFile  = Join-Path $script:StateRoot "$hash.err"
-        # Lo crea el demonio cuando ya está monitoreando
+        # Lo crea el demonio cuando ya esta monitoreando
         ReadyFile = Join-Path $script:StateRoot "$hash.ready"
     }
 }
@@ -128,8 +128,8 @@ function Global:Test-DaemonRunning {
 }
 
 # ------------------------------------------------------------
-# Find-DuplicateFiles: busca, dentro del árbol de un directorio,
-# archivos con el mismo nombre y el mismo tamaño que el archivo
+# Find-DuplicateFiles: busca, dentro del arbol de un directorio,
+# archivos con el mismo nombre y el mismo tamano que el archivo
 # nuevo recibido (mismo criterio de duplicado que el Ejercicio 3)
 # ------------------------------------------------------------
 function Global:Find-DuplicateFiles {
@@ -231,20 +231,20 @@ function Global:Start-DaemonProcess {
     $state = Get-StateFiles -AbsoluteDirectory $absDir
 
     if (Test-DaemonRunning -PidFile $state.PidFile) {
-        Write-FriendlyError "ya existe un demonio en ejecución para el directorio '$absDir'."
+        Write-FriendlyError "ya existe un demonio en ejecucion para el directorio '$absDir'."
         return
     }
     Remove-Item -LiteralPath $state.PidFile, $state.StopFile, $state.ReadyFile -ErrorAction SilentlyContinue
 
     $scriptPath = $PSCommandPath
-    # Se relanza con el mismo ejecutable que está corriendo este
+    # Se relanza con el mismo ejecutable que esta corriendo este
     # script (powershell.exe en Windows, pwsh en Linux)
     $exePath = (Get-Process -Id $PID).Path
     $esWindows = [System.Environment]::OSVersion.Platform -eq 'Win32NT'
 
     $argumentList = @('-NoLogo', '-NoProfile', '-NonInteractive')
     if ($esWindows) { $argumentList += @('-WindowStyle', 'Hidden') }
-    # Una "\" final escaparía la comilla de cierre ("C:\dir\" llega
+    # Una "\" final escaparia la comilla de cierre ("C:\dir\" llega
     # roto al proceso hijo), por eso se duplica
     $quote = { param($s) '"' + ($s -replace '\\$', '\\') + '"' }
     $argumentList += @(
@@ -272,7 +272,7 @@ function Global:Start-DaemonProcess {
 
     Set-Content -LiteralPath $state.PidFile -Value $process.Id
 
-    # Se espera a que el demonio confirme que ya está monitoreando,
+    # Se espera a que el demonio confirme que ya esta monitoreando,
     # para no perder archivos creados apenas termina este comando
     $limite = (Get-Date).AddSeconds(30)
     while (-not (Test-Path -LiteralPath $state.ReadyFile)) {
@@ -290,7 +290,7 @@ function Global:Start-DaemonProcess {
 
 # ------------------------------------------------------------
 # Stop-DaemonProcess: le pide al demonio asociado al directorio
-# indicado que finalice (mediante un archivo "señal") y espera
+# indicado que finalice (mediante un archivo "senal") y espera
 # a que termine, limpiando su estado.
 # ------------------------------------------------------------
 function Global:Stop-DaemonProcess {
@@ -305,7 +305,7 @@ function Global:Stop-DaemonProcess {
     $state = Get-StateFiles -AbsoluteDirectory $absDir
 
     if (-not (Test-DaemonRunning -PidFile $state.PidFile)) {
-        Write-FriendlyError "no hay ningún demonio en ejecución para el directorio '$absDir'."
+        Write-FriendlyError "no hay ningun demonio en ejecucion para el directorio '$absDir'."
         Remove-Item -LiteralPath $state.PidFile, $state.StopFile, $state.ErrFile -ErrorAction SilentlyContinue
         return
     }
@@ -316,7 +316,7 @@ function Global:Stop-DaemonProcess {
     try {
         Wait-Process -Id $storedId -Timeout 5 -ErrorAction Stop
     } catch {
-        # Si no terminó solo dentro del tiempo de espera, se fuerza la salida
+        # Si no termino solo dentro del tiempo de espera, se fuerza la salida
         Stop-Process -Id $storedId -Force -ErrorAction SilentlyContinue
     }
 
@@ -325,7 +325,7 @@ function Global:Stop-DaemonProcess {
 }
 
 # ------------------------------------------------------------
-# Invoke-NewFile: procesa un archivo nuevo dentro del árbol
+# Invoke-NewFile: procesa un archivo nuevo dentro del arbol
 # monitoreado; si tiene duplicados (y no fue respaldado antes)
 # genera el backup
 # ------------------------------------------------------------
@@ -354,7 +354,7 @@ function Global:Invoke-NewFile {
     [System.Threading.Monitor]::Enter($backedUp)
     try {
         # Volvemos a chequear: puede que el otro archivo del
-        # par ya haya generado el backup mientras esperábamos.
+        # par ya haya generado el backup mientras esperabamos.
         if ($backedUp.ContainsKey($FullPath)) { return }
         $newItem = Get-Item -LiteralPath $FullPath -ErrorAction SilentlyContinue
         if (-not $newItem) { return }
@@ -372,8 +372,8 @@ function Global:Invoke-NewFile {
 # ------------------------------------------------------------
 # Start-MonitorLoop: cuerpo del proceso demonio (corre solo en
 # la instancia lanzada con -Interno). Registra el
-# FileSystemWatcher y permanece vivo hasta encontrar la señal
-# de detención.
+# FileSystemWatcher y permanece vivo hasta encontrar la senal
+# de detencion.
 # ------------------------------------------------------------
 function Global:Start-MonitorLoop {
     param(
@@ -390,16 +390,16 @@ function Global:Start-MonitorLoop {
     $watcher.Path = $absDir
     $watcher.IncludeSubdirectories = $true
     $watcher.Filter = '*.*'
-    # DirectoryName: para enterarse también de carpetas nuevas
+    # DirectoryName: para enterarse tambien de carpetas nuevas
     $watcher.NotifyFilter = [System.IO.NotifyFilters]'FileName, DirectoryName'
 
     $messageData = [PSCustomObject]@{
         RootDirectory   = $absDir
         OutputDirectory = $Salida
         # Registro (thread-safe) de archivos que ya formaron parte
-        # de algún backup. Evita procesar el mismo archivo dos
+        # de algun backup. Evita procesar el mismo archivo dos
         # veces cuando: (a) FileSystemWatcher dispara el mismo
-        # evento más de una vez para una sola escritura, o (b) los
+        # evento mas de una vez para una sola escritura, o (b) los
         # dos archivos de un mismo par duplicado se crean casi al
         # mismo tiempo y cada uno dispara su propio evento.
         AlreadyBackedUp = [System.Collections.Hashtable]::Synchronized(@{})
@@ -414,9 +414,9 @@ function Global:Start-MonitorLoop {
             Invoke-NewFile -FullPath $path -MessageData $data
         }
         elseif (Test-Path -LiteralPath $path -PathType Container) {
-            # Carpeta nueva (o movida al árbol): los archivos creados
+            # Carpeta nueva (o movida al arbol): los archivos creados
             # dentro de ella antes de que el watcher empiece a vigilarla
-            # no generan evento propio, así que se revisan acá
+            # no generan evento propio, asi que se revisan aca
             Start-Sleep -Milliseconds 200
             Get-ChildItem -LiteralPath $path -Recurse -File -ErrorAction SilentlyContinue |
                 ForEach-Object { Invoke-NewFile -FullPath $_.FullName -MessageData $data }
@@ -424,7 +424,7 @@ function Global:Start-MonitorLoop {
     }
 
     # Se cubren tanto archivos nuevos (Created) como archivos
-    # movidos dentro del árbol monitoreado (Renamed).
+    # movidos dentro del arbol monitoreado (Renamed).
     $subscriptions = @(
         Register-ObjectEvent -InputObject $watcher -EventName Created -Action $action -MessageData $messageData
         Register-ObjectEvent -InputObject $watcher -EventName Renamed -Action $action -MessageData $messageData

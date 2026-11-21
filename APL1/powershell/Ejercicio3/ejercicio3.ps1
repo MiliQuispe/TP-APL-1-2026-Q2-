@@ -1,5 +1,5 @@
 # Integrantes del grupo:
-# Altamiranda Isaías
+# Altamiranda Isaias
 # Quispe, Milagros 45064110
 # Puca, Micaela 39913189
 # Penela, Santiago 44254763
@@ -7,9 +7,9 @@
 
 <#
 .SYNOPSIS
-    Identifica archivos duplicados (mismo nombre y tamaño) en un directorio y sus subdirectorios.
+    Identifica archivos duplicados (mismo nombre y tamano) en un directorio y sus subdirectorios.
 .DESCRIPTION
-    Busca archivos repetidos basándose exclusivamente en la coincidencia de nombre y tamaño.
+    Busca archivos repetidos basandose exclusivamente en la coincidencia de nombre y tamano.
     Muestra en pantalla el nombre del archivo duplicado seguido de las rutas de los directorios donde se encuentra.
 .PARAMETER directorio
     Ruta del directorio a analizar (relativa o absoluta).
@@ -52,5 +52,5 @@ try {
     }
 }
 catch {
-    Write-Error "Ocurrió un error inesperado al procesar los archivos: $_"
+    Write-Error "Ocurrio un error inesperado al procesar los archivos: $_"
 }
